@@ -1,0 +1,192 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isInHouse(houseId) {
+      return isAuthenticated() && getUserData().houseId == houseId;
+    }
+
+    function isHouseMember(data) {
+      return isAuthenticated() && getUserData().houseId == data.houseId;
+    }
+
+    function isValidString(val, min, max) {
+      return val is string && val.size() >= min && val.size() <= max;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.uid == request.auth.uid &&
+             data.email is string &&
+             (!('houseId' in data) || data.houseId is string) &&
+             (!('role' in data) || data.role in ['admin', 'member']) &&
+             (!('phoneNumber' in data) || data.phoneNumber is string) &&
+             (!('timezone' in data) || data.timezone is string) &&
+             (!('defaultCurrency' in data) || data.defaultCurrency is string) &&
+             (!('notificationSettings' in data) || data.notificationSettings is map);
+    }
+
+    function isValidHouse(data) {
+      return data.keys().hasAll(['name', 'inviteCode']) &&
+             isValidString(data.name, 1, 100) &&
+             isValidString(data.inviteCode, 1, 50);
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasAll(['title', 'amount', 'currency', 'category', 'paidBy', 'splitType', 'splits', 'date', 'houseId']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.amount is number && data.amount >= 0 &&
+             data.currency is string && data.currency.size() == 3 &&
+             data.category in ['rent', 'groceries', 'utilities', 'entertainment', 'other'] &&
+             data.paidBy is string &&
+             data.splitType in ['equal', 'amount', 'percentage', 'shares'] &&
+             data.splits is list &&
+             data.houseId is string &&
+             (!('receiptImage' in data) || data.receiptImage == null || (data.receiptImage is string && data.receiptImage.size() < 2000000));
+    }
+
+    function isValidInventoryItem(data) {
+      return data.keys().hasAll(['name', 'status', 'houseId']) &&
+             isValidString(data.name, 1, 100) &&
+             data.status in ['In Stock', 'Low', 'Out'] &&
+             data.houseId is string;
+    }
+
+    function isValidShoppingItem(data) {
+      return data.keys().hasAll(['name', 'houseId', 'addedBy', 'isBought', 'status', 'assignedTo']) &&
+             isValidString(data.name, 1, 100) &&
+             data.houseId is string &&
+             data.isBought is bool &&
+             data.status in ['In Stock', 'Low', 'Out'] &&
+             data.assignedTo is string;
+    }
+
+    function isValidResponsibility(data) {
+      return data.keys().hasAll(['title', 'assignedTo', 'amount', 'houseId', 'frequency']) &&
+             isValidString(data.title, 1, 200) &&
+             data.assignedTo is string &&
+             data.amount is number &&
+             data.houseId is string &&
+             data.frequency in ['monthly', 'weekly', 'custom'];
+    }
+
+    function isValidActivity(data) {
+      return data.keys().hasAll(['type', 'description', 'timestamp', 'houseId', 'userId']) &&
+             data.houseId is string &&
+             data.userId is string;
+    }
+
+    function isValidChore(data) {
+      return data.keys().hasAll(['name', 'houseId', 'rotationOrder']) &&
+             isValidString(data.name, 1, 100) &&
+             data.houseId is string &&
+             data.rotationOrder is list;
+    }
+
+    function isValidAnnouncement(data) {
+      return data.keys().hasAll(['title', 'content', 'authorId', 'houseId']) &&
+             isValidString(data.title, 1, 200) &&
+             data.houseId is string;
+    }
+
+    function isValidCalendarEvent(data) {
+      return data.keys().hasAll(['title', 'houseId']) &&
+             isValidString(data.title, 1, 200) &&
+             data.houseId is string;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['userId', 'message', 'timestamp']) &&
+             data.userId is string &&
+             data.message is string &&
+             data.timestamp is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+
+    match /houses/{houseId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidHouse(request.resource.data);
+      allow update: if isInHouse(houseId) && isValidHouse(request.resource.data);
+    }
+
+    match /expenses/{expenseId} {
+      allow read: if isHouseMember(resource.data);
+      allow create: if isAuthenticated() && isHouseMember(request.resource.data) && isValidExpense(request.resource.data);
+      allow update: if isHouseMember(resource.data) && isHouseMember(request.resource.data) && isValidExpense(request.resource.data);
+      allow delete: if isHouseMember(resource.data);
+    }
+
+    match /chores/{choreId} {
+      allow read: if isHouseMember(resource.data);
+      allow create: if isAuthenticated() && isHouseMember(request.resource.data) && isValidChore(request.resource.data);
+      allow update: if isHouseMember(resource.data) && isHouseMember(request.resource.data) && isValidChore(request.resource.data);
+      allow delete: if isHouseMember(resource.data);
+    }
+
+    match /shoppingList/{itemId} {
+      allow read: if isHouseMember(resource.data);
+      allow create: if isAuthenticated() && isHouseMember(request.resource.data) && isValidShoppingItem(request.resource.data);
+      allow update: if isHouseMember(resource.data) && isHouseMember(request.resource.data) && isValidShoppingItem(request.resource.data);
+      allow delete: if isHouseMember(resource.data);
+    }
+
+    match /responsibilities/{respId} {
+      allow read: if isHouseMember(resource.data);
+      allow create: if isAuthenticated() && isHouseMember(request.resource.data) && isValidResponsibility(request.resource.data);
+      allow update: if isHouseMember(resource.data) && isHouseMember(request.resource.data) && isValidResponsibility(request.resource.data);
+      allow delete: if isHouseMember(resource.data);
+    }
+
+    match /activities/{activityId} {
+      allow read: if isHouseMember(resource.data);
+      allow create: if isAuthenticated() && isHouseMember(request.resource.data) && isValidActivity(request.resource.data);
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if isHouseMember(resource.data);
+      allow create: if isAuthenticated() && isHouseMember(request.resource.data) && isValidAnnouncement(request.resource.data);
+      allow update: if isHouseMember(resource.data) && isHouseMember(request.resource.data) && isValidAnnouncement(request.resource.data);
+      allow delete: if isHouseMember(resource.data);
+    }
+
+    match /calendarEvents/{eventId} {
+      allow read: if isHouseMember(resource.data);
+      allow create: if isAuthenticated() && isHouseMember(request.resource.data) && isValidCalendarEvent(request.resource.data);
+      allow update: if isHouseMember(resource.data) && isHouseMember(request.resource.data) && isValidCalendarEvent(request.resource.data);
+      allow delete: if isHouseMember(resource.data);
+    }
+
+    match /notifications/{notifId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidNotification(request.resource.data);
+      allow update: if isOwner(resource.data.userId) && isValidNotification(request.resource.data);
+      allow delete: if isOwner(resource.data.userId);
+    }
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "entities": {
+    "House": {
+      "title": "House",
+      "description": "A shared living space",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the house" },
+        "inviteCode": { "type": "string", "description": "Unique code to join the house" },
+        "rentSplitType": { "type": "string", "enum": ["equal", "custom"], "description": "How rent is split" },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "rules": { "type": "string", "description": "House rules and policies" },
+            "quietHours": { "type": "string" },
+            "guestPolicy": { "type": "string" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "inviteCode"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A resident in a house",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "houseId": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "member"] },
+        "rentPercentage": { "type": "number" },
+        "chorePreferences": { "type": "array", "items": { "type": "string" } },
+        "phoneNumber": { "type": "string" },
+        "timezone": { "type": "string" },
+        "defaultCurrency": { "type": "string" },
+        "joinedAt": { "type": "string", "format": "date-time" },
+        "notificationSettings": {
+          "type": "object",
+          "properties": {
+            "expenses": { "type": "boolean" },
+            "chores": { "type": "boolean" },
+            "inventory": { "type": "boolean" },
+            "announcements": { "type": "boolean" }
+          }
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "A shared household expense",
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "category": { "type": "string", "enum": ["rent", "groceries", "utilities", "other"] },
+        "description": { "type": "string" },
+        "paidBy": { "type": "string", "description": "UID of the user who paid" },
+        "splitType": { "type": "string", "enum": ["equal", "percentage", "halves", "specific", "custom"] },
+        "splits": { "type": "array", "items": { "type": "object", "properties": { "userId": { "type": "string" }, "amount": { "type": "number" } } } },
+        "date": { "type": "string", "format": "date-time" },
+        "houseId": { "type": "string" },
+        "isRecurring": { "type": "boolean" },
+        "recurringInterval": { "type": "string", "enum": ["monthly", "weekly", "custom"] },
+        "customIntervalDays": { "type": "number" }
+      },
+      "required": ["amount", "category", "paidBy", "houseId"]
+    },
+    "Chore": {
+      "title": "Chore",
+      "description": "A household task",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "assignedTo": { "type": "string", "description": "UID of the assigned user" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "lastCompletedAt": { "type": "string", "format": "date-time" },
+        "completed": { "type": "boolean" },
+        "houseId": { "type": "string" },
+        "frequency": { "type": "string", "enum": ["daily", "weekly", "bi-weekly", "monthly", "custom", "rotation", "completion-based"] },
+        "customIntervalDays": { "type": "number" },
+        "rotationOrder": { "type": "array", "items": { "type": "string" } },
+        "history": { "type": "array", "items": { "type": "object" } }
+      },
+      "required": ["name", "houseId", "rotationOrder"]
+    },
+    "ShoppingItem": {
+      "title": "ShoppingItem",
+      "description": "Items to be bought with rotation logic",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "houseId": { "type": "string" },
+        "addedBy": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "rotationOrder": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["In Stock", "Low", "Out"] },
+        "isBought": { "type": "boolean" },
+        "price": { "type": "number" },
+        "boughtBy": { "type": "string" },
+        "boughtAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "houseId", "status", "assignedTo"]
+    },
+    "Responsibility": {
+      "title": "Responsibility",
+      "description": "Recurring bills and responsibilities",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "frequency": { "type": "string", "enum": ["monthly", "weekly", "custom"] },
+        "dayOfMonth": { "type": "number" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "houseId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "skipped"] },
+        "lastExpenseId": { "type": "string" }
+      },
+      "required": ["title", "assignedTo", "amount", "houseId", "frequency"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "House-wide announcement",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "authorId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "houseId": { "type": "string" },
+        "isPinned": { "type": "boolean" }
+      },
+      "required": ["title", "content", "authorId", "houseId"]
+    },
+    "CalendarEvent": {
+      "title": "CalendarEvent",
+      "description": "Event on the house calendar",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "houseId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "completed": { "type": "boolean" }
+      },
+      "required": ["title", "houseId"]
+    },
+    "HouseActivity": {
+      "title": "HouseActivity",
+      "description": "Log of house events",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "description": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "houseId": { "type": "string" },
+        "userId": { "type": "string" }
+      },
+      "required": ["type", "description", "houseId", "timestamp"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notification",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "choreId": { "type": "string" },
+        "houseId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["userId", "message", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/houses/{houseId}": { "schema": "House", "description": "House details" },
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/expenses/{expenseId}": { "schema": "Expense", "description": "Shared expenses" },
+    "/chores/{choreId}": { "schema": "Chore", "description": "Household chores" },
+    "/shoppingList/{itemId}": { "schema": "ShoppingItem", "description": "Collaborative shopping list with rotation" },
+    "/responsibilities/{respId}": { "schema": "Responsibility", "description": "Recurring house responsibilities" },
+    "/activities/{activityId}": { "schema": "HouseActivity", "description": "House activity log" },
+    "/announcements/{announcementId}": { "schema": "Announcement", "description": "House announcements" },
+    "/calendarEvents/{eventId}": { "schema": "CalendarEvent", "description": "Calendar events" },
+    "/notifications/{notifId}": { "schema": "Notification", "description": "User notifications" }
+  }
+}
