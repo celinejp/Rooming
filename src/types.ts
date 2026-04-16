@@ -147,3 +147,19 @@ export interface FairnessScore {
   score: number;
   insight: string;
 }
+
+/** In-app notification document in `notifications` collection */
+export interface HouseNotification {
+  id: string;
+  userId: string;
+  message: string;
+  /** Firestore Timestamp or client Date */
+  timestamp: unknown;
+  read?: boolean;
+  type?: 'chore_assignment' | 'announcement' | 'rules' | 'expense' | string;
+  houseId?: string;
+  title?: string;
+  /** Dashboard tab id to open, e.g. `expenses` or `announcements` */
+  link?: string;
+  choreId?: string;
+}

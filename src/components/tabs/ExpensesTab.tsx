@@ -208,6 +208,22 @@ export default function ExpensesTab() {
           houseId: house.id,
           userId: profile?.uid || paidBy,
         });
+
+        const amountStr = `${getCurrencySymbol(currency)}${parseFloat(amount).toFixed(2)}`;
+        for (const member of members) {
+          if (member.uid === paidBy) continue;
+          if ((member.notificationSettings?.expenses ?? true) === false) continue;
+          await addDoc(collection(db, 'notifications'), {
+            userId: member.uid,
+            houseId: house.id,
+            type: 'expense',
+            title: 'New expense',
+            message: `${getUserName(paidBy)} added ${title} (${amountStr})`,
+            timestamp: serverTimestamp(),
+            read: false,
+            link: 'expenses',
+          });
+        }
         
         toast.success('Expense added!');
       }

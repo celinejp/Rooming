@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db, handleFirestoreError, OperationType } from '@/src/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
-import { House, UserProfile, Expense, Chore, ShoppingItem, HouseActivity, Announcement, CalendarEvent, Responsibility } from '@/src/types';
+import { House, UserProfile, Expense, Chore, ShoppingItem, HouseActivity, Announcement, CalendarEvent, Responsibility, HouseNotification } from '@/src/types';
 
 interface HouseContextType {
   user: User | null;
@@ -16,7 +16,7 @@ interface HouseContextType {
   activities: HouseActivity[];
   announcements: Announcement[];
   calendarEvents: CalendarEvent[];
-  notifications: any[];
+  notifications: HouseNotification[];
   loading: boolean;
   isAuthReady: boolean;
   getUserName: (uid: string) => string;
@@ -36,7 +36,7 @@ export function HouseProvider({ children }: { children: React.ReactNode }) {
   const [activities, setActivities] = useState<HouseActivity[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<HouseNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
@@ -151,10 +151,14 @@ export function HouseProvider({ children }: { children: React.ReactNode }) {
 
           // Fetch notifications
           const unsubNotifications = onSnapshot(query(collection(db, 'notifications'), where('userId', '==', user.uid)), (nSnap) => {
-            const data = nSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-            data.sort((a: any, b: any) => {
-              const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
-              const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
+            const data = nSnap.docs.map(d => ({ id: d.id, ...d.data() } as HouseNotification));
+            data.sort((a, b) => {
+              const timeA = a.timestamp && typeof a.timestamp === 'object' && 'toDate' in a.timestamp
+                ? (a.timestamp as { toDate: () => Date }).toDate().getTime()
+                : 0;
+              const timeB = b.timestamp && typeof b.timestamp === 'object' && 'toDate' in b.timestamp
+                ? (b.timestamp as { toDate: () => Date }).toDate().getTime()
+                : 0;
               return timeB - timeA;
             });
             setNotifications(data);

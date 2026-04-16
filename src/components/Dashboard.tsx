@@ -31,6 +31,7 @@ import AnnouncementsTab from './tabs/AnnouncementsTab';
 import ParticipantsTab from './tabs/ParticipantsTab';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import NotificationsCenter from './NotificationsCenter';
 
 export default function Dashboard() {
   const { house, profile, announcements } = useHouse();
@@ -105,16 +106,19 @@ export default function Dashboard() {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full py-6 px-4">
-      <div className="flex items-center gap-3 px-2 mb-8">
-        <div className="bg-primary rounded-xl p-2">
-          <Home className="h-6 w-6 text-white" />
+      <div className="flex items-start justify-between gap-2 px-2 mb-8">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="bg-primary rounded-xl p-2 shrink-0">
+            <Home className="h-6 w-6 text-white" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-bold text-xl tracking-tight truncate">{house?.name}</h1>
+            <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+              Code: {house?.inviteCode}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-bold text-xl tracking-tight">{house?.name}</h1>
-          <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
-            Code: {house?.inviteCode}
-          </p>
-        </div>
+        <NotificationsCenter onNavigate={handleNavigate} />
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -187,13 +191,14 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
-        <header className="lg:hidden bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-50">
-          <div className="flex items-center gap-2">
-            <div className="bg-primary rounded-lg p-1.5">
+        <header className="lg:hidden bg-white border-b px-4 py-3 flex items-center justify-between gap-2 sticky top-0 z-50">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="bg-primary rounded-lg p-1.5 shrink-0">
               <Home className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold">{house?.name}</span>
+            <span className="font-bold truncate">{house?.name}</span>
           </div>
+          <NotificationsCenter onNavigate={handleNavigate} />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger nativeButton={true} render={<Button variant="ghost" size="icon" />}>
               <Menu className="h-6 w-6" />

@@ -196,7 +196,8 @@ export default function ChoresTab() {
         choreId: chore.id,
         houseId: house.id,
         timestamp: serverTimestamp(),
-        read: false
+        read: false,
+        link: 'chores',
       });
 
       await addDoc(collection(db, 'activities'), {

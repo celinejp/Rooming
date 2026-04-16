@@ -117,7 +117,13 @@ service cloud.firestore {
       return data.keys().hasAll(['userId', 'message', 'timestamp']) &&
              data.userId is string &&
              data.message is string &&
-             data.timestamp is timestamp;
+             data.timestamp is timestamp &&
+             (!('read' in data) || data.read is bool) &&
+             (!('type' in data) || data.type is string) &&
+             (!('houseId' in data) || data.houseId is string) &&
+             (!('title' in data) || data.title is string) &&
+             (!('link' in data) || data.link is string) &&
+             (!('choreId' in data) || data.choreId is string);
     }
 
     // ===============================================================
